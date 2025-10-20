@@ -2,6 +2,14 @@
 
 A comprehensive git dashboard for Neovim that provides an intuitive interface for git operations.
 
+### Dashboard
+<img width="886" height="452" alt="Screenshot 2025-10-20 at 10 57 57" src="https://github.com/user-attachments/assets/38336467-ff7b-4d56-96ea-d83d8e8d5a63" />
+
+### Commit detail
+<img width="530" height="329" alt="Screenshot 2025-10-20 at 10 58 10" src="https://github.com/user-attachments/assets/6308a26d-2f2d-4e06-bfd0-abb0c41d8f6e" />
+
+### Comparing against tracking branch
+<img width="522" height="325" alt="Screenshot 2025-10-20 at 10 58 45" src="https://github.com/user-attachments/assets/25b39322-e97e-43d9-b2dd-a2d15de74c21" />
 
 ## Installation
 
