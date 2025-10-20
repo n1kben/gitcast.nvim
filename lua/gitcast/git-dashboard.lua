@@ -52,7 +52,7 @@ local SECTIONS = {
 local cached_modules = {}
 local function get_module(plugin_path)
   if not cached_modules[plugin_path] then
-    cached_modules[plugin_path] = require('n1kben.' .. plugin_path)
+    cached_modules[plugin_path] = require(plugin_path)
   end
   return cached_modules[plugin_path]
 end
