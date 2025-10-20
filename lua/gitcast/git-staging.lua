@@ -136,6 +136,17 @@ local function get_git_status()
           })
         end
 
+        -- Handle untracked files
+        if index_status == "?" and worktree_status == "?" then
+          local counts = untracked_counts[file] or { added = 0, removed = 0 }
+          table.insert(result.untracked, { 
+            status = "??", 
+            file = file,
+            added = counts.added,
+            removed = counts.removed
+          })
+        end
+
       end
     end
   end
