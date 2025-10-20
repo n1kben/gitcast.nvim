@@ -147,6 +147,20 @@ end
 -- Get tracking module for dashboard
 function M.get_tracking_module()
   local tracking_branch = M.get_tracking_branch()
+  
+  -- Get current branch to compare
+  local sys = require('gitcast.system-utils')
+  local current_branch = sys.system("git rev-parse --abbrev-ref HEAD 2>/dev/null"):gsub("%s+$", "")
+  
+  -- Don't show tracking section if current branch equals tracking branch
+  if current_branch == tracking_branch then
+    return {
+      lines = {},
+      highlight_map = {},
+      actions = {}
+    }
+  end
+  
   local line_text = "Tracking: " .. tracking_branch
   
   return {
