@@ -374,7 +374,7 @@ local function setup_dashboard_keymaps(bufnr, line_to_section, section_data)
     sys.system(cmd)
     if vim.v.shell_error == 0 then
       vim.notify("Pull rebase completed", vim.log.levels.INFO)
-      if M._refresh_callback then M._refresh_callback() end
+      M.refresh_dashboard()
     else
       vim.notify("Pull rebase failed", vim.log.levels.ERROR)
     end
