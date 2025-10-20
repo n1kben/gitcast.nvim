@@ -334,13 +334,14 @@ function M.get_branch_module()
       table.insert(status_parts, string.format("↓%d", branch_status.behind))
     end
     
-    -- Check for conflicts and add indicator
-    local conflict_info = get_conflict_details(branch_info.branch, tracking_branch)
-    local total_conflicts = #conflict_info.active_conflicts + #conflict_info.potential_conflicts
-    if total_conflicts > 0 then
-      local conflict_icon = #conflict_info.active_conflicts > 0 and "🔥" or "⚠"
-      table.insert(status_parts, string.format("%s%d", conflict_icon, total_conflicts))
-    end
+    -- Temporarily disable expensive conflict detection for performance
+    -- TODO: Make this async or cache results
+    -- local conflict_info = get_conflict_details(branch_info.branch, tracking_branch)
+    -- local total_conflicts = #conflict_info.active_conflicts + #conflict_info.potential_conflicts
+    -- if total_conflicts > 0 then
+    --   local conflict_icon = #conflict_info.active_conflicts > 0 and "🔥" or "⚠"
+    --   table.insert(status_parts, string.format("%s%d", conflict_icon, total_conflicts))
+    -- end
     
     if #status_parts > 0 then
       head_line = head_line .. " (" .. table.concat(status_parts, " ") .. ")"

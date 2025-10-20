@@ -5,7 +5,7 @@ local sys = require('gitcast.system-utils')
 
 -- Configuration
 local config = {
-  performance_tracking = false  -- Enable/disable performance timing logs
+  performance_tracking = false -- Enable/disable performance timing logs
 }
 
 
@@ -40,12 +40,12 @@ M._log_performance = log_performance
 
 -- Section definitions with their plugins and headers
 local SECTIONS = {
-  { key = "branch", plugin = "gitcast.git-branch", header = nil, get_module = "get_branch_module" },
-  { key = "tracking", plugin = "gitcast.git-tracking", header = nil, get_module = "get_tracking_module" },
-  { key = "commits", plugin = "gitcast.git-commits", header = nil, get_module = "get_commits_module" }, -- Header will be dynamic
-  { key = "staged", plugin = "gitcast.git-staging", header = "Staged changes:", get_module = "get_staged_module" },
-  { key = "modified", plugin = "gitcast.git-staging", header = "Unstaged changes:", get_module = "get_modified_module" },
-  { key = "untracked", plugin = "gitcast.git-staging", header = "Untracked files:", get_module = "get_untracked_module" },
+  { key = "branch",    plugin = "gitcast.git-branch",   header = nil,                 get_module = "get_branch_module" },
+  { key = "tracking",  plugin = "gitcast.git-tracking", header = nil,                 get_module = "get_tracking_module" },
+  { key = "commits",   plugin = "gitcast.git-commits",  header = nil,                 get_module = "get_commits_module" }, -- Header will be dynamic
+  { key = "staged",    plugin = "gitcast.git-staging",  header = "Staged changes:",   get_module = "get_staged_module" },
+  { key = "modified",  plugin = "gitcast.git-staging",  header = "Unstaged changes:", get_module = "get_modified_module" },
+  { key = "untracked", plugin = "gitcast.git-staging",  header = "Untracked files:",  get_module = "get_untracked_module" },
 }
 
 -- Cache module requires
@@ -71,8 +71,8 @@ end
 -- Compose dashboard content from all modules
 local function compose_dashboard_content()
   local all_lines = {}
-  local line_to_section = {}  -- Maps line number to section info
-  local section_data = {}     -- Stores module data for each section
+  local line_to_section = {} -- Maps line number to section info
+  local section_data = {}    -- Stores module data for each section
   local current_line = 1
 
   -- Check if we have any staging modules and fetch git data once
@@ -83,9 +83,9 @@ local function compose_dashboard_content()
       break
     end
   end
-  
+
   local git_data = nil
-  
+
   if has_staging_modules then
     local git_staging_module = get_module("gitcast.git-staging")
     git_data = git_staging_module.fetch_git_status()
@@ -93,10 +93,10 @@ local function compose_dashboard_content()
 
   for _, section_def in ipairs(SECTIONS) do
     local plugin = get_module(section_def.plugin)
-    
-    -- Pass git_data to staging modules, git output to commits module, normal call for others
+
+    -- Pass git_data to staging modules, normal call for others
     local module_data
-    
+
     if section_def.plugin == "gitcast.git-staging" and git_data then
       module_data = plugin[section_def.get_module](git_data)
     elseif section_def.plugin == "gitcast.git-commits" then
@@ -106,8 +106,8 @@ local function compose_dashboard_content()
     else
       module_data = plugin[section_def.get_module]()
     end
-    
-    
+
+
     section_data[section_def.key] = {
       module_data = module_data,
       start_line = current_line,
@@ -148,7 +148,7 @@ local function compose_dashboard_content()
   end
 
 
-  
+
   return all_lines, line_to_section, section_data
 end
 
@@ -170,7 +170,7 @@ local function apply_dashboard_highlighting(bufnr, line_to_section, section_data
 
       if highlight_map and highlight_map[module_line] then
         local hl_info = highlight_map[module_line]
-        
+
         if type(hl_info) == "string" then
           -- Simple highlight group for entire line
           vim.api.nvim_buf_add_highlight(bufnr, ns_id, hl_info, line_num - 1, 0, -1)
@@ -190,14 +190,14 @@ end
 local function add_dashboard_virtual_text(bufnr, line_to_section, section_data)
   -- Create a namespace per module to allow different configurations
   local module_namespaces = {}
-  
+
   for line_num, section_info in pairs(line_to_section) do
     if section_info.module_line and not section_info.is_spacing and not section_info.is_header then
       local section_key = section_info.section_key
       local module_line = section_info.module_line
       local module_data = section_data[section_key].module_data
       local section_def = section_data[section_key].section_def
-      
+
       if module_data.virtual_text and module_data.virtual_text[module_line] then
         -- Get module's virtual text configuration
         local plugin = get_module(section_def.plugin)
@@ -205,18 +205,18 @@ local function add_dashboard_virtual_text(bufnr, line_to_section, section_data)
           default_hl_group = "Comment",
           namespace = "git_dashboard_virtual_text"
         }
-        
+
         -- Create or reuse namespace for this module
         if not module_namespaces[virt_config.namespace] then
           module_namespaces[virt_config.namespace] = vim.api.nvim_create_namespace(virt_config.namespace)
           vim.api.nvim_buf_clear_namespace(bufnr, module_namespaces[virt_config.namespace], 0, -1)
         end
-        
+
         local virtual_text_content = module_data.virtual_text[module_line]
         local ns_id = module_namespaces[virt_config.namespace]
-        
+
         vim.api.nvim_buf_set_extmark(bufnr, ns_id, line_num - 1, 0, {
-          virt_text = {{virtual_text_content, virt_config.default_hl_group}},
+          virt_text = { { virtual_text_content, virt_config.default_hl_group } },
           virt_text_pos = "eol"
         })
       end
@@ -230,14 +230,14 @@ local function setup_dashboard_keymaps(bufnr, line_to_section, section_data)
   vim.keymap.set('n', '<CR>', function()
     local line_num = vim.api.nvim_win_get_cursor(0)[1]
     local section_info = line_to_section[line_num]
-    
+
     if section_info then
       if section_info.is_header then
         -- Only branch picker available for headers now
         local section_key = section_info.section_key
         local section_def = section_data[section_key].section_def
         local plugin = get_module(section_def.plugin)
-        
+
         if section_key == "branch" and plugin.show_branch_picker then
           plugin.show_branch_picker()
         end
@@ -246,7 +246,7 @@ local function setup_dashboard_keymaps(bufnr, line_to_section, section_data)
         local section_key = section_info.section_key
         local module_line = section_info.module_line
         local module_data = section_data[section_key].module_data
-        
+
         if module_data.actions and module_data.actions[module_line] then
           module_data.actions[module_line]()
         end
@@ -258,12 +258,12 @@ local function setup_dashboard_keymaps(bufnr, line_to_section, section_data)
   vim.keymap.set('n', 'gf', function()
     local line_num = vim.api.nvim_win_get_cursor(0)[1]
     local section_info = line_to_section[line_num]
-    
+
     if section_info and section_info.module_line and not section_info.is_header then
       local section_key = section_info.section_key
       local module_line = section_info.module_line
       local module_data = section_data[section_key].module_data
-      
+
       -- Only for staging sections, not commits
       if section_key == "staged" or section_key == "modified" or section_key == "untracked" then
         -- Try module-specific gf_action first
@@ -286,12 +286,12 @@ local function setup_dashboard_keymaps(bufnr, line_to_section, section_data)
   vim.keymap.set('n', '<Tab>', function()
     local line_num = vim.api.nvim_win_get_cursor(0)[1]
     local section_info = line_to_section[line_num]
-    
+
     if section_info and section_info.module_line and not section_info.is_header then
       local section_key = section_info.section_key
       local module_line = section_info.module_line
       local module_data = section_data[section_key].module_data
-      
+
       -- For branch section or staging sections
       if section_key == "branch" or section_key == "staged" or section_key == "modified" or section_key == "untracked" then
         if module_data.tab_action then
@@ -306,10 +306,10 @@ local function setup_dashboard_keymaps(bufnr, line_to_section, section_data)
     local line_num = vim.api.nvim_win_get_cursor(0)[1]
     local section_info = line_to_section[line_num]
     local git_staging = require('gitcast.git-staging')
-    
+
     if section_info then
       local section_key = section_info.section_key
-      
+
       -- Only handle staging sections
       if section_key == "staged" or section_key == "modified" or section_key == "untracked" then
         git_staging.stage_all_in_section(section_key)
@@ -327,12 +327,12 @@ local function setup_dashboard_keymaps(bufnr, line_to_section, section_data)
   vim.keymap.set('n', '<BS>', function()
     local line_num = vim.api.nvim_win_get_cursor(0)[1]
     local section_info = line_to_section[line_num]
-    
+
     if section_info and section_info.module_line and not section_info.is_header then
       local section_key = section_info.section_key
       local module_line = section_info.module_line
       local module_data = section_data[section_key].module_data
-      
+
       -- For staging sections and commits
       if section_key == "staged" or section_key == "modified" or section_key == "untracked" or section_key == "commits" then
         if module_data.bs_action then
@@ -426,8 +426,8 @@ end
 
 -- Create dashboard buffer
 local function create_dashboard_buffer()
-  local name = utils.create_unique_buffer_name('GitDashboard')
-  local bufnr = utils.create_view_buffer(name, 'gitdashboard')
+  local name = utils.create_unique_buffer_name('GitCast')
+  local bufnr = utils.create_view_buffer(name, 'gitcastdashboard')
   vim.api.nvim_buf_set_option(bufnr, 'buflisted', true)
   return bufnr
 end
@@ -458,7 +458,6 @@ end
 
 -- Open dashboard
 function M.open_dashboard()
-  
   -- Check if current buffer is already valid and reuse it
   if M._current_buffer and vim.api.nvim_buf_is_valid(M._current_buffer) then
     vim.api.nvim_set_current_buf(M._current_buffer)
@@ -479,15 +478,15 @@ function M.open_dashboard()
   -- Set refresh callback for staging operations
   local git_staging = require('gitcast.git-staging')
   git_staging.set_refresh_callback(M.refresh_dashboard)
-  
+
   -- Set refresh callback for commit operations
   local git_commits = require('gitcast.git-commits')
   git_commits.set_refresh_callback(M.refresh_dashboard)
-  
+
   -- Set refresh callback for branch operations
   local git_branch = require('gitcast.git-branch')
   git_branch.set_refresh_callback(M.refresh_dashboard)
-  
+
   -- Set refresh callback for tracking operations
   local git_tracking = require('gitcast.git-tracking')
   git_tracking.set_refresh_callback(M.refresh_dashboard)
@@ -535,13 +534,12 @@ function M.open_dashboard()
       break
     end
   end
-  
 end
 
 -- Show help
 function M.show_help()
   local help_lines = {
-    "Git Dashboard Help",
+    "GitCast Dashboard Help",
     "",
     "GLOBAL KEYMAPS & COMMANDS:",
     "  g?       Show this help",
@@ -568,7 +566,7 @@ function M.show_help()
     "",
     "Staging Sections (staged/modified/untracked):",
     "  <CR>     Show file diff",
-    "  gf       Open file in editor", 
+    "  gf       Open file in editor",
     "  <Tab>    Stage/unstage file",
     "  <S-Tab>  Stage/unstage all files in current section",
     "  <BS>     Checkout/unstage/delete file"
@@ -585,9 +583,9 @@ function M.show_help()
 
   -- Add highlighting for sections
   local ns_id = vim.api.nvim_create_namespace("git_dashboard_help")
-  vim.api.nvim_buf_add_highlight(buf, ns_id, "Title", 0, 0, -1) -- Title
-  vim.api.nvim_buf_add_highlight(buf, ns_id, "Special", 2, 0, -1) -- GLOBAL KEYMAPS & COMMANDS
-  vim.api.nvim_buf_add_highlight(buf, ns_id, "Special", 10, 0, -1) -- SECTION-SPECIFIC KEYMAPS
+  vim.api.nvim_buf_add_highlight(buf, ns_id, "Title", 0, 0, -1)     -- Title
+  vim.api.nvim_buf_add_highlight(buf, ns_id, "Special", 2, 0, -1)   -- GLOBAL KEYMAPS & COMMANDS
+  vim.api.nvim_buf_add_highlight(buf, ns_id, "Special", 10, 0, -1)  -- SECTION-SPECIFIC KEYMAPS
   vim.api.nvim_buf_add_highlight(buf, ns_id, "Function", 12, 0, -1) -- Branch Section
   vim.api.nvim_buf_add_highlight(buf, ns_id, "Function", 15, 0, -1) -- Commits Section
   vim.api.nvim_buf_add_highlight(buf, ns_id, "Function", 20, 0, -1) -- Staging Sections
@@ -606,7 +604,7 @@ function M.show_help()
   vim.keymap.set('n', '<Esc>', function()
     vim.cmd('bw')
   end, { buffer = buf })
-  
+
   vim.keymap.set('n', 'q', function()
     vim.cmd('bw')
   end, { buffer = buf })
@@ -615,13 +613,14 @@ end
 -- Setup function
 function M.setup(opts)
   opts = opts or {}
-  
+
   -- Update configuration
   if opts.performance_tracking ~= nil then
     config.performance_tracking = opts.performance_tracking
   end
-  
+
   -- No user commands, GitCast command is created in gitcast/init.lua
 end
 
 return M
+
