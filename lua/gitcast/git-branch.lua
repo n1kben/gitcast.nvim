@@ -1,6 +1,7 @@
 -- git-branch.lua
 local M = {}
 local sys = require('gitcast.system-utils')
+local async_sys = require('gitcast.async-system')
 
 -- Setup highlight groups for branch module
 function M.setup_highlights()
@@ -461,22 +462,20 @@ function M.rebase_onto_main()
   
   vim.notify(string.format("Rebasing %s onto %s...", current_branch, main_branch), vim.log.levels.INFO)
   
-  -- Perform the rebase
-  local cmd = string.format("git rebase %s", vim.fn.shellescape(main_branch))
-  local result = sys.system(cmd)
-  
-  if vim.v.shell_error ~= 0 then
-    vim.notify("Rebase failed: " .. result, vim.log.levels.ERROR)
-    vim.notify("You may need to resolve conflicts and run 'git rebase --continue' or 'git rebase --abort'", vim.log.levels.INFO)
-    return false
-  else
-    vim.notify(string.format("Successfully rebased %s onto %s", current_branch, main_branch), vim.log.levels.INFO)
-    -- Refresh dashboard if callback is available
-    if M._refresh_callback then
-      M._refresh_callback()
+  -- Perform the rebase asynchronously
+  async_sys.git_rebase_async(main_branch, {
+    on_complete = function(success)
+      if success then
+        vim.notify(string.format("Successfully rebased %s onto %s", current_branch, main_branch), vim.log.levels.INFO)
+        -- Refresh dashboard if callback is available
+        if M._refresh_callback then
+          M._refresh_callback()
+        end
+      end
     end
-    return true
-  end
+  })
+  
+  return true
 end
 
 -- Squash merge current branch into tracking branch

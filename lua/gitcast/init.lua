@@ -19,4 +19,8 @@ function M.setup(opts)
   end, { desc = "Open GitCast dashboard" })
 end
 
+M.open = function()
+  require("gitcast.git-dashboard").open_dashboard()
+end
+
 return M

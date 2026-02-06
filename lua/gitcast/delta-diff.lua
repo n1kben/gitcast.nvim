@@ -1,17 +1,9 @@
 -- delta-diff.lua - Beautiful diff rendering using delta in terminal windows
 local M = {}
-local sys = require('gitcast.system-utils')
 
 -- Check if delta is available
 local function is_delta_available()
   return vim.fn.executable("delta") == 1
-end
-
--- Simple terminal wrapper that prevents exit messages
-local function start_terminal_job(cmd, opts)
-  opts = opts or {}
-  opts.term = true
-  return vim.fn.jobstart(cmd, opts)
 end
 
 -- Create and configure a terminal buffer for displaying delta output
@@ -19,26 +11,28 @@ local function create_delta_terminal(title, cmd)
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_set_current_buf(buf)
   local win = vim.api.nvim_get_current_win()
-  
-  vim.api.nvim_buf_set_name(buf, title)
+
   vim.api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
   vim.api.nvim_buf_set_option(buf, 'buflisted', false)
-  
-  -- Start the terminal job
-  local job_id = start_terminal_job(cmd, {
-    on_exit = function(_, exit_code)
-      if exit_code ~= 0 then
-        vim.notify("Git command failed", vim.log.levels.ERROR)
-      end
-      vim.schedule(function()
-        if vim.api.nvim_buf_is_valid(buf) then
-          vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-          vim.api.nvim_buf_set_option(buf, 'modified', false)
-        end
-      end)
+
+  -- Append sleep to keep the process alive so Neovim doesn't show [process exited 0].
+  local full_cmd = cmd .. "; sleep 86400"
+  local job_id = vim.fn.jobstart(full_cmd, { term = true })
+
+  -- Set buffer name after terminal starts so it overrides the command string
+  vim.api.nvim_buf_set_name(buf, title)
+
+  -- Close helper: stop the job then force-wipe the buffer
+  local function close_buffer()
+    pcall(vim.fn.jobstop, job_id)
+    if vim.api.nvim_buf_is_valid(buf) then
+      vim.api.nvim_buf_delete(buf, { force = true })
     end
-  })
-  
+  end
+
+  vim.keymap.set('n', 'q', close_buffer, { buffer = buf, silent = true })
+  vim.keymap.set('n', '<Esc>', close_buffer, { buffer = buf, silent = true })
+
   vim.cmd('stopinsert')
   return buf, win
 end
@@ -64,7 +58,7 @@ function M.show_git_diff(file, opts)
     git_cmd = string.format("git diff %s", vim.fn.shellescape(file))
   end
   
-  local full_cmd = string.format("exec %s | delta --paging=never", git_cmd)
+  local full_cmd = string.format("%s | delta --paging=never", git_cmd)
   return create_delta_terminal(title, full_cmd)
 end
 
@@ -78,7 +72,7 @@ function M.show_commit_diff(commit_hash, opts)
   end
   
   local title = opts.title or ("Commit: " .. commit_hash:sub(1, 8))
-  local full_cmd = string.format("exec git show %s | delta --paging=never", vim.fn.shellescape(commit_hash))
+  local full_cmd = string.format("git show %s | delta --paging=never", vim.fn.shellescape(commit_hash))
   return create_delta_terminal(title, full_cmd)
 end
 
@@ -92,7 +86,7 @@ function M.show_untracked_diff(file, opts)
   end
   
   local title = opts.title or ("New file: " .. file)
-  local full_cmd = string.format("exec git diff --no-index /dev/null %s | delta --paging=never", 
+  local full_cmd = string.format("git diff --no-index /dev/null %s | delta --paging=never", 
     vim.fn.shellescape(file)
   )
   return create_delta_terminal(title, full_cmd)
@@ -112,7 +106,7 @@ function M.show_branch_file_diff(base_branch, file, opts)
     vim.fn.shellescape(base_branch), 
     vim.fn.shellescape(file)
   )
-  local full_cmd = string.format("exec %s | delta --paging=never", git_cmd)
+  local full_cmd = string.format("%s | delta --paging=never", git_cmd)
   return create_delta_terminal(title, full_cmd)
 end
 

@@ -429,14 +429,14 @@ local function create_section_module(files, highlight_color, cr_action, tab_acti
     
     -- Status character highlight (handle both single char and ?? status)
     local status_len = #item.status
-    table.insert(highlights, { 3, 3 + status_len, highlight_color })
+    table.insert(highlights, { 3, 2 + status_len, highlight_color })
     
     -- Line count highlights (adjust offset based on status length)
     local status_end = 3 + status_len
     if #line_counts_highlights > 0 then
       for _, hl in ipairs(line_counts_highlights) do
         local start_col, end_col, hl_group = hl[1], hl[2], hl[3]
-        table.insert(highlights, { status_end + start_col, status_end + end_col, hl_group })
+        table.insert(highlights, { status_end + start_col + 1, status_end + end_col, hl_group })
       end
     end
     

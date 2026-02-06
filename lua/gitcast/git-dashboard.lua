@@ -2,6 +2,7 @@
 local M = {}
 local utils = require('gitcast.utils')
 local sys = require('gitcast.system-utils')
+local async_sys = require('gitcast.async-system')
 
 -- Configuration
 local config = {
@@ -369,15 +370,13 @@ local function setup_dashboard_keymaps(bufnr, line_to_section, section_data)
   end, { buffer = bufnr, desc = "Checkout new branch" })
 
   vim.keymap.set('n', 'gpr', function()
-    local branch = sys.system("git rev-parse --abbrev-ref HEAD"):gsub("%s+", "")
-    local cmd = "git pull --rebase origin " .. vim.fn.shellescape(branch)
-    sys.system(cmd)
-    if vim.v.shell_error == 0 then
-      vim.notify("Pull rebase completed", vim.log.levels.INFO)
-      M.refresh_dashboard()
-    else
-      vim.notify("Pull rebase failed", vim.log.levels.ERROR)
-    end
+    async_sys.git_pull_async({
+      on_complete = function(success)
+        if success then
+          M.refresh_dashboard()
+        end
+      end
+    })
   end, { buffer = bufnr, desc = "Git pull rebase" })
 
   vim.keymap.set('n', 'grm', function()
@@ -391,32 +390,28 @@ local function setup_dashboard_keymaps(bufnr, line_to_section, section_data)
   end, { buffer = bufnr, desc = "Squash merge current branch into tracking branch" })
 
   vim.keymap.set('n', 'gp', function()
-    local branch = sys.system("git rev-parse --abbrev-ref HEAD"):gsub("%s+", "")
-    local cmd = "git push origin " .. vim.fn.shellescape(branch)
-    sys.system(cmd)
-    if vim.v.shell_error == 0 then
-      vim.notify("Push completed", vim.log.levels.INFO)
-    else
-      vim.notify("Push failed", vim.log.levels.ERROR)
-    end
+    async_sys.git_push_async()
   end, { buffer = bufnr, desc = "Git push" })
 
   vim.keymap.set('n', 'gP', function()
-    local branch = sys.system("git rev-parse --abbrev-ref HEAD"):gsub("%s+", "")
-    vim.ui.confirm({
-      msg = "Force push to " .. branch .. "?",
-      default = false
-    }, function(confirmed)
-      if confirmed then
-        local cmd = "git push origin " .. vim.fn.shellescape(branch) .. " --force-with-lease"
-        sys.system(cmd)
-        if vim.v.shell_error == 0 then
-          vim.notify("Force push completed", vim.log.levels.INFO)
+    async_sys.execute_async("git rev-parse --abbrev-ref HEAD", {
+      show_progress = false,
+      on_exit = function(result)
+        if result.exit_code == 0 then
+          local branch = result.stdout:gsub("%s+", "")
+          vim.ui.confirm({
+            msg = "Force push to " .. branch .. "?",
+            default = false
+          }, function(confirmed)
+            if confirmed then
+              async_sys.git_push_async({ force = true })
+            end
+          end)
         else
-          vim.notify("Force push failed", vim.log.levels.ERROR)
+          vim.notify("Failed to get current branch", vim.log.levels.ERROR)
         end
       end
-    end)
+    })
   end, { buffer = bufnr, desc = "Git push force (with confirmation)" })
 
   vim.keymap.set('n', 'g?', function()
