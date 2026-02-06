@@ -155,17 +155,6 @@ function M.show_branch_picker()
   end)
 end
 
--- Show create branch prompt
-function M.show_create_branch_prompt()
-  vim.ui.input({ prompt = "New branch name: " }, function(branch_name)
-    if not branch_name or branch_name == "" then
-      vim.notify("Branch creation cancelled", vim.log.levels.INFO)
-      return
-    end
-    M.create_branch(branch_name)
-  end)
-end
-
 -- Get current branch name
 local function get_current_branch()
   local branch_info = get_branch_info()
@@ -307,8 +296,6 @@ local function get_conflict_details(current_branch, main_branch)
   
   return conflict_info
 end
-
--- This function is no longer needed since we get status info from git status command
 
 -- Get branch module for dashboard (optimized version)
 function M.get_branch_module()
@@ -1003,7 +990,7 @@ function M.show_branch_help()
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, help_lines)
   vim.bo[buf].modifiable = false
 
-  local win = vim.api.nvim_open_win(buf, true, {
+  vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
     width = width,
     height = height,

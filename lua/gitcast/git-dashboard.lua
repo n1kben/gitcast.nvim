@@ -585,7 +585,7 @@ function M.show_help()
   vim.api.nvim_buf_add_highlight(buf, ns_id, "Function", 15, 0, -1) -- Commits Section
   vim.api.nvim_buf_add_highlight(buf, ns_id, "Function", 20, 0, -1) -- Staging Sections
 
-  local win = vim.api.nvim_open_win(buf, true, {
+  vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
     width = width,
     height = height,
