@@ -13,8 +13,8 @@ local function create_delta_terminal(title, cmd)
   vim.api.nvim_set_current_buf(buf)
   local win = vim.api.nvim_get_current_win()
 
-  vim.api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
-  vim.api.nvim_buf_set_option(buf, 'buflisted', false)
+  vim.bo[buf].bufhidden = 'wipe'
+  vim.bo[buf].buflisted = false
 
   -- Append sleep to keep the process alive so Neovim doesn't show [process exited 0].
   local full_cmd = cmd .. "; sleep 86400"

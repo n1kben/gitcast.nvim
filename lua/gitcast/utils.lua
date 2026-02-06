@@ -4,12 +4,12 @@ local M = {}
 -- Create a read-only display buffer (for status displays, diffs, etc.)
 function M.create_view_buffer(name, filetype)
   local bufnr = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_option(bufnr, 'buftype', 'nofile')
-  vim.api.nvim_buf_set_option(bufnr, 'swapfile', false)
-  vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
+  vim.bo[bufnr].buftype = 'nofile'
+  vim.bo[bufnr].swapfile = false
+  vim.bo[bufnr].modifiable = false
 
   if filetype then
-    vim.api.nvim_buf_set_option(bufnr, 'filetype', filetype)
+    vim.bo[bufnr].filetype = filetype
   end
 
   if name then

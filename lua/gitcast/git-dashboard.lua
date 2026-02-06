@@ -423,7 +423,7 @@ end
 local function create_dashboard_buffer()
   local name = utils.create_unique_buffer_name('GitCast')
   local bufnr = utils.create_view_buffer(name, 'gitcastdashboard')
-  vim.api.nvim_buf_set_option(bufnr, 'buflisted', true)
+  vim.bo[bufnr].buflisted = true
   return bufnr
 end
 
@@ -436,9 +436,9 @@ function M.refresh_dashboard()
   local content, line_to_section, section_data = compose_dashboard_content()
 
   -- Update buffer content
-  vim.api.nvim_buf_set_option(M._current_buffer, 'modifiable', true)
+  vim.bo[M._current_buffer].modifiable = true
   vim.api.nvim_buf_set_lines(M._current_buffer, 0, -1, false, content)
-  vim.api.nvim_buf_set_option(M._current_buffer, 'modifiable', false)
+  vim.bo[M._current_buffer].modifiable = false
 
   -- Apply highlighting and virtual text
   apply_dashboard_highlighting(M._current_buffer, line_to_section, section_data)
@@ -493,9 +493,9 @@ function M.open_dashboard()
   M._current_buffer = bufnr
 
   -- Set content
-  vim.api.nvim_buf_set_option(bufnr, 'modifiable', true)
+  vim.bo[bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, content)
-  vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
+  vim.bo[bufnr].modifiable = false
 
   -- Apply highlighting and virtual text
   apply_dashboard_highlighting(bufnr, line_to_section, section_data)
@@ -574,7 +574,7 @@ function M.show_help()
 
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, help_lines)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  vim.bo[buf].modifiable = false
 
   -- Add highlighting for sections
   local ns_id = vim.api.nvim_create_namespace("git_dashboard_help")

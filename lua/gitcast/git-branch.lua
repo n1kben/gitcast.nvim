@@ -959,12 +959,12 @@ function M.show_branch_detail()
   local utils = require('gitcast.utils')
   local name = utils.create_unique_buffer_name('GitBranchDetail')
   local bufnr = utils.create_view_buffer(name, 'gitbranchdetail')
-  vim.api.nvim_buf_set_option(bufnr, 'buflisted', true)
-  
+  vim.bo[bufnr].buflisted = true
+
   -- Set content
-  vim.api.nvim_buf_set_option(bufnr, 'modifiable', true)
+  vim.bo[bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, content)
-  vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
+  vim.bo[bufnr].modifiable = false
   
   -- Apply highlighting
   apply_branch_highlighting(bufnr, highlight_map)
@@ -1001,7 +1001,7 @@ function M.show_branch_help()
 
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, help_lines)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  vim.bo[buf].modifiable = false
 
   local win = vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
@@ -1017,7 +1017,7 @@ function M.show_branch_help()
   vim.keymap.set('n', '<Esc>', function()
     vim.cmd('bw')
   end, { buffer = buf })
-  
+
   vim.keymap.set('n', 'q', function()
     vim.cmd('bw')
   end, { buffer = buf })

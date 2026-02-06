@@ -33,9 +33,8 @@ local function get_untracked_line_counts(files)
   for _, file in ipairs(files) do
     local abs_file = utils.to_abs_path(file)
     if vim.fn.filereadable(abs_file) == 1 then
-      local line_count = sys.system("wc -l < " .. vim.fn.shellescape(abs_file)):gsub("%s+", "")
-      local count = tonumber(line_count) or 0
-      untracked_counts[file] = { added = count, removed = 0 }
+      local content = vim.fn.readfile(abs_file)
+      untracked_counts[file] = { added = #content, removed = 0 }
     else
       -- File doesn't exist or is not readable
       untracked_counts[file] = { added = 0, removed = 0 }
@@ -266,7 +265,7 @@ end
 -- Unstage a file
 function M.unstage_file(file)
   local abs_file = utils.to_abs_path(file)
-  local has_commits = sys.system("git rev-parse --verify HEAD 2>/dev/null")
+  sys.system("git rev-parse --verify HEAD 2>/dev/null")
   local cmd_result
 
   if vim.v.shell_error == 0 then

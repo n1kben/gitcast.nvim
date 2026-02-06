@@ -31,7 +31,10 @@ local function get_commit_files(commit_hash)
   end
   local status_output = status_handle:read("*a")
   status_handle:close()
-  
+  if vim.v.shell_error ~= 0 then
+    return {}
+  end
+
   -- Get line counts
   local numstat_handle = sys.popen(numstat_cmd)
   if not numstat_handle then
@@ -39,7 +42,6 @@ local function get_commit_files(commit_hash)
   end
   local numstat_output = numstat_handle:read("*a")
   numstat_handle:close()
-
   if vim.v.shell_error ~= 0 then
     return {}
   end
@@ -212,14 +214,14 @@ local function show_file_at_commit(commit_hash, filepath)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
   -- Set buffer options
-  vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
-  vim.api.nvim_buf_set_option(bufnr, "modified", false)
-  vim.api.nvim_buf_set_option(bufnr, 'buflisted', true)
+  vim.bo[bufnr].modifiable = false
+  vim.bo[bufnr].modified = false
+  vim.bo[bufnr].buflisted = true
 
   -- Set filetype for syntax highlighting
   local filetype = vim.fn.fnamemodify(filepath, ":e")
   if filetype ~= "" then
-    vim.api.nvim_buf_set_option(bufnr, "filetype", filetype)
+    vim.bo[bufnr].filetype = filetype
   end
 
   vim.api.nvim_set_current_buf(bufnr)
@@ -279,7 +281,7 @@ end
 local function create_commit_detail_buffer()
   local name = utils.create_unique_buffer_name('GitCommitDetail')
   local bufnr = utils.create_view_buffer(name, 'gitcommitdetail')
-  vim.api.nvim_buf_set_option(bufnr, 'buflisted', true)
+  vim.bo[bufnr].buflisted = true
   return bufnr
 end
 
@@ -298,9 +300,9 @@ function M.show_commit_detail(commit)
   M._detail_buffer = bufnr
 
   -- Set content
-  vim.api.nvim_buf_set_option(bufnr, 'modifiable', true)
+  vim.bo[bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, content)
-  vim.api.nvim_buf_set_option(bufnr, 'modifiable', false)
+  vim.bo[bufnr].modifiable = false
 
   -- Apply highlighting
   apply_highlighting(bufnr, highlight_map)
@@ -336,7 +338,7 @@ function M.show_help()
 
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, help_lines)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  vim.bo[buf].modifiable = false
 
   local win = vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
