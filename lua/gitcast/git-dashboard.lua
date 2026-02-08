@@ -274,9 +274,9 @@ local function setup_dashboard_keymaps(bufnr, line_to_section, section_data)
           -- For file sections, open file
           local file = module_data.file_map[module_line]
           if type(file) == "string" then
-            vim.cmd('edit ' .. vim.fn.fnameescape(file))
+            vim.cmd('edit ' .. vim.fn.fnameescape(utils.to_abs_path(file)))
           elseif type(file) == "table" and file.file then
-            vim.cmd('edit ' .. vim.fn.fnameescape(file.file))
+            vim.cmd('edit ' .. vim.fn.fnameescape(utils.to_abs_path(file.file)))
           end
         end
       end

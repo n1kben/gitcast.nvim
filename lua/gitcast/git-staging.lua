@@ -1,6 +1,7 @@
 -- git-staging.lua
 local M = {}
 local sys = require('gitcast.system-utils')
+local utils = require('gitcast.utils')
 
 -- Shared git status cache to avoid duplicate calls
 local git_status_cache = nil
@@ -30,8 +31,9 @@ local function get_untracked_line_counts(files)
   local untracked_counts = {}
   
   for _, file in ipairs(files) do
-    if vim.fn.filereadable(file) == 1 then
-      local line_count = sys.system("wc -l < " .. vim.fn.shellescape(file)):gsub("%s+", "")
+    local abs_file = utils.to_abs_path(file)
+    if vim.fn.filereadable(abs_file) == 1 then
+      local line_count = sys.system("wc -l < " .. vim.fn.shellescape(abs_file)):gsub("%s+", "")
       local count = tonumber(line_count) or 0
       untracked_counts[file] = { added = count, removed = 0 }
     else
@@ -214,15 +216,16 @@ function M.fetch_git_status()
   end
 
   -- Get untracked files
-  local untracked_output = sys.system("git ls-files --others --exclude-standard")
+  local untracked_output = sys.system("git ls-files --others --exclude-standard --full-name")
   
   if vim.v.shell_error == 0 and untracked_output ~= "" then
     for line in untracked_output:gmatch("[^\r\n]+") do
       if line ~= "" then
         -- Get line count for untracked file
         local added = 0
-        if vim.fn.filereadable(line) == 1 then
-          local content = vim.fn.readfile(line)
+        local abs_line = utils.to_abs_path(line)
+        if vim.fn.filereadable(abs_line) == 1 then
+          local content = vim.fn.readfile(abs_line)
           added = #content
         end
         
@@ -241,15 +244,16 @@ end
 
 -- Stage a file
 function M.stage_file(file)
-  local file_exists = vim.fn.filereadable(file) == 1
-  local dir_exists = vim.fn.isdirectory(file) == 1
+  local abs_file = utils.to_abs_path(file)
+  local file_exists = vim.fn.filereadable(abs_file) == 1
+  local dir_exists = vim.fn.isdirectory(abs_file) == 1
 
   local cmd_result
   if file_exists or dir_exists then
-    cmd_result = sys.system("git add " .. vim.fn.shellescape(file))
+    cmd_result = sys.system("git add " .. vim.fn.shellescape(abs_file))
   else
     -- File is deleted, use git rm to stage the deletion
-    cmd_result = sys.system("git rm " .. vim.fn.shellescape(file))
+    cmd_result = sys.system("git rm " .. vim.fn.shellescape(abs_file))
   end
 
   if vim.v.shell_error ~= 0 then
@@ -261,15 +265,16 @@ end
 
 -- Unstage a file
 function M.unstage_file(file)
+  local abs_file = utils.to_abs_path(file)
   local has_commits = sys.system("git rev-parse --verify HEAD 2>/dev/null")
   local cmd_result
-  
+
   if vim.v.shell_error == 0 then
     -- Has commits, can use reset HEAD
-    cmd_result = sys.system("git reset HEAD " .. vim.fn.shellescape(file))
+    cmd_result = sys.system("git reset HEAD " .. vim.fn.shellescape(abs_file))
   else
     -- No commits yet, use rm --cached
-    cmd_result = sys.system("git rm --cached " .. vim.fn.shellescape(file))
+    cmd_result = sys.system("git rm --cached " .. vim.fn.shellescape(abs_file))
   end
 
   if vim.v.shell_error ~= 0 then
@@ -355,7 +360,8 @@ end
 
 -- Checkout/discard changes to a file
 function M.checkout_file(file)
-  local cmd_result = sys.system("git checkout -- " .. vim.fn.shellescape(file))
+  local abs_file = utils.to_abs_path(file)
+  local cmd_result = sys.system("git checkout -- " .. vim.fn.shellescape(abs_file))
 
   if vim.v.shell_error ~= 0 then
     vim.notify("Git checkout failed: " .. cmd_result, vim.log.levels.ERROR)
@@ -366,13 +372,14 @@ end
 
 -- Delete an untracked file
 function M.delete_untracked_file(file)
-  local is_dir = vim.fn.isdirectory(file) == 1
+  local abs_file = utils.to_abs_path(file)
+  local is_dir = vim.fn.isdirectory(abs_file) == 1
   local success
-  
+
   if is_dir then
-    success = vim.fn.delete(file, "rf")
+    success = vim.fn.delete(abs_file, "rf")
   else
-    success = vim.fn.delete(file)
+    success = vim.fn.delete(abs_file)
   end
 
   if success == 0 then
@@ -467,7 +474,7 @@ local function create_section_module(files, highlight_color, cr_action, tab_acti
     gf_action = function(line_num)
       local file = file_map[line_num]
       if file then
-        vim.cmd('edit ' .. vim.fn.fnameescape(file))
+        vim.cmd('edit ' .. vim.fn.fnameescape(utils.to_abs_path(file)))
       end
     end,
     
@@ -557,11 +564,12 @@ function M.get_untracked_module(git_data)
     "GitStatusUntracked",
     -- <CR> action: show diff or edit new file
     function(file)
-      if vim.fn.filereadable(file) == 1 then
+      local abs_file = utils.to_abs_path(file)
+      if vim.fn.filereadable(abs_file) == 1 then
         local delta_diff = require('gitcast.delta-diff')
-        delta_diff.show_untracked_diff(file, { title = "New file: " .. file })
+        delta_diff.show_untracked_diff(abs_file, { title = "New file: " .. file })
       else
-        vim.cmd('edit ' .. vim.fn.fnameescape(file))
+        vim.cmd('edit ' .. vim.fn.fnameescape(abs_file))
       end
     end,
     -- <Tab> action: stage
