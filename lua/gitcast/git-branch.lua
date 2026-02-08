@@ -400,6 +400,7 @@ end
 
 -- Create new branch and checkout
 function M.show_create_branch_prompt()
+  vim.cmd('redraw')
   vim.ui.input({ prompt = "New branch name: " }, function(branch_name)
     if not branch_name or branch_name == "" then
       vim.notify("Branch creation cancelled - no name provided", vim.log.levels.INFO)
@@ -520,6 +521,7 @@ function M.squash_merge_into_tracking()
   end
   
   -- Get squash commit message from user
+  vim.cmd('redraw')
   vim.ui.input({
     prompt = "Squash commit message: ",
     default = default_message

@@ -616,6 +616,10 @@ function M.commit_staged_changes()
     return false
   end
 
+  -- Force a redraw to ensure clean screen state after system calls in has_staged_changes(),
+  -- otherwise vim.ui.input() may render with a stale/corrupt command line display
+  vim.cmd('redraw')
+
   vim.ui.input({ prompt = "Commit message: " }, function(commit_message)
     if not commit_message or commit_message == "" then
       vim.notify("Commit cancelled - no message provided", vim.log.levels.INFO)
