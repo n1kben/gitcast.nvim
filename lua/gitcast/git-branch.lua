@@ -2,6 +2,7 @@
 local M = {}
 local sys = require('gitcast.system-utils')
 local async_sys = require('gitcast.async-system')
+local utils = require('gitcast.utils')
 
 -- Setup highlight groups for branch module
 function M.setup_highlights()
@@ -922,7 +923,7 @@ local function setup_branch_detail_keymaps(bufnr, file_map, current_branch, main
     local file = file_map[line_num]
 
     if file then
-      vim.cmd('edit ' .. vim.fn.fnameescape(file.path))
+      vim.cmd('edit ' .. vim.fn.fnameescape(utils.to_abs_path(file.path)))
     end
   end, { buffer = bufnr, desc = "Open file in editor" })
 

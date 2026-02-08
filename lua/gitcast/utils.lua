@@ -30,13 +30,40 @@ function M.create_unique_buffer_name(base_name)
   return name
 end
 
--- Get git repository root
+-- Cached git root
+local _git_root_cache = nil
+
+-- Get git repository root (cached)
 function M.get_git_root()
+  if _git_root_cache then
+    return _git_root_cache
+  end
   local root_output = vim.fn.system("git rev-parse --show-toplevel 2>/dev/null")
   if vim.v.shell_error == 0 then
-    return root_output:gsub("%s+$", "") -- trim trailing whitespace
+    _git_root_cache = root_output:gsub("%s+$", "") -- trim trailing whitespace
+    return _git_root_cache
   end
   return nil
+end
+
+-- Convert a git-root-relative path to an absolute path.
+-- Git commands return paths relative to the repo root, but filesystem
+-- operations (filereadable, edit, delete) resolve relative to Neovim's CWD.
+-- In monorepo subfolders, CWD != git root, so we must use absolute paths.
+function M.to_abs_path(file)
+  if not file then return file end
+  -- Already absolute
+  if file:sub(1, 1) == "/" then return file end
+  local root = M.get_git_root()
+  if root then
+    return root .. "/" .. file
+  end
+  return file
+end
+
+-- Clear cached git root (e.g. when switching repositories)
+function M.clear_git_root_cache()
+  _git_root_cache = nil
 end
 
 return M

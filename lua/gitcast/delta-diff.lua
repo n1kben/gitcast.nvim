@@ -1,5 +1,6 @@
 -- delta-diff.lua - Beautiful diff rendering using delta in terminal windows
 local M = {}
+local utils = require('gitcast.utils')
 
 -- Check if delta is available
 local function is_delta_available()
@@ -40,24 +41,26 @@ end
 -- Show git diff using delta
 function M.show_git_diff(file, opts)
   opts = opts or {}
-  
+
   if not is_delta_available() then
     vim.notify("Delta not found. Install delta for better diff rendering.", vim.log.levels.WARN)
     return
   end
-  
+
   local title = opts.title or ("Diff: " .. file)
-  
+  -- Use absolute path so git resolves the file correctly from any CWD
+  local abs_file = utils.to_abs_path(file)
+
   -- Determine git diff command based on options
   local git_cmd
   if opts.cached then
-    git_cmd = string.format("git diff --cached %s", vim.fn.shellescape(file))
+    git_cmd = string.format("git diff --cached %s", vim.fn.shellescape(abs_file))
   elseif opts.commit then
-    git_cmd = string.format("git show %s -- %s", vim.fn.shellescape(opts.commit), vim.fn.shellescape(file))
+    git_cmd = string.format("git show %s -- %s", vim.fn.shellescape(opts.commit), vim.fn.shellescape(abs_file))
   else
-    git_cmd = string.format("git diff %s", vim.fn.shellescape(file))
+    git_cmd = string.format("git diff %s", vim.fn.shellescape(abs_file))
   end
-  
+
   local full_cmd = string.format("%s | delta --paging=never", git_cmd)
   return create_delta_terminal(title, full_cmd)
 end
@@ -65,12 +68,12 @@ end
 -- Show commit diff using delta
 function M.show_commit_diff(commit_hash, opts)
   opts = opts or {}
-  
+
   if not is_delta_available() then
     vim.notify("Delta not found. Install delta for better diff rendering.", vim.log.levels.WARN)
     return
   end
-  
+
   local title = opts.title or ("Commit: " .. commit_hash:sub(1, 8))
   local full_cmd = string.format("git show %s | delta --paging=never", vim.fn.shellescape(commit_hash))
   return create_delta_terminal(title, full_cmd)
@@ -79,15 +82,17 @@ end
 -- Show diff for untracked files (show entire file content as added)
 function M.show_untracked_diff(file, opts)
   opts = opts or {}
-  
+
   if not is_delta_available() then
     vim.notify("Delta not found. Install delta for better diff rendering.", vim.log.levels.WARN)
     return
   end
-  
+
   local title = opts.title or ("New file: " .. file)
-  local full_cmd = string.format("git diff --no-index /dev/null %s | delta --paging=never", 
-    vim.fn.shellescape(file)
+  -- Use absolute path so the file is found from any CWD
+  local abs_file = utils.to_abs_path(file)
+  local full_cmd = string.format("git diff --no-index /dev/null %s | delta --paging=never",
+    vim.fn.shellescape(abs_file)
   )
   return create_delta_terminal(title, full_cmd)
 end
@@ -95,16 +100,18 @@ end
 -- Show branch file diff using delta
 function M.show_branch_file_diff(base_branch, file, opts)
   opts = opts or {}
-  
+
   if not is_delta_available() then
     vim.notify("Delta not found. Install delta for better diff rendering.", vim.log.levels.WARN)
     return
   end
-  
+
   local title = opts.title or (string.format("Branch diff: %s vs %s", base_branch, file))
-  local git_cmd = string.format("git diff %s...HEAD -- %s", 
-    vim.fn.shellescape(base_branch), 
-    vim.fn.shellescape(file)
+  -- Use absolute path so git resolves the file correctly from any CWD
+  local abs_file = utils.to_abs_path(file)
+  local git_cmd = string.format("git diff %s...HEAD -- %s",
+    vim.fn.shellescape(base_branch),
+    vim.fn.shellescape(abs_file)
   )
   local full_cmd = string.format("%s | delta --paging=never", git_cmd)
   return create_delta_terminal(title, full_cmd)
